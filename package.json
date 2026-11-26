@@ -1,0 +1,18 @@
+{
+  "name": "ascii-scenery-newtab",
+  "private": true,
+  "version": "1.0.0",
+  "description": "A minimalist New Tab extension with animated ASCII scenery and animals that follow your local time and live weather.",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "typecheck": "tsc --noEmit",
+    "preview": "vite preview",
+    "icons": "node scripts/make-icons.mjs"
+  },
+  "devDependencies": {
+    "typescript": "^7.0.2",
+    "vite": "^8.4.0"
+  }
+}

@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="en" data-style="ink">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="dark" />
+    <title>New Tab</title>
+    <link rel="icon" type="image/png" href="./icons/icon-32.png" />
+  </head>
+  <body>
+    <canvas id="scene" aria-hidden="true"></canvas>
+
+    <nav id="scenebar" class="scenebar glass" data-glass="0.3" role="radiogroup" aria-label="Scene"></nav>
+
+    <main id="hud" class="hud">
+      <div class="stage">
+        <div class="masthead">
+          <div id="clockbox" class="clockbox"><div id="clock" class="clock" aria-live="off"></div><div id="date" class="date"></div></div>
+          <h1 id="greeting" class="greeting"></h1>
+        </div>
+        <form id="search" class="composer glass" data-glass="0.42" data-blur="6" role="search" autocomplete="off">
+          <div class="composer-top">
+            <span class="composer-icon" id="search-icon" aria-hidden="true"></span>
+            <textarea id="search-input" name="q" rows="2" spellcheck="false" aria-label="Search"></textarea>
+          </div>
+          <div class="composer-bottom">
+            <button type="button" id="engine-btn" class="engine-btn" aria-haspopup="listbox" aria-expanded="false" title="Choose search engine"></button>
+            <span class="spacer"></span>
+            <button type="button" id="mic-btn" class="square-btn" aria-label="Voice search" title="Voice search" hidden></button>
+            <button type="submit" id="search-go" class="square-btn send" aria-label="Search" disabled></button>
+          </div>
+          <ul id="engine-menu" class="engine-menu glass" data-glass="0.72" data-blur="10" role="listbox" hidden></ul>
+        </form>
+        <nav id="links" class="links" aria-label="Shortcuts"></nav>
+      </div>
+    </main>
+
+    <button id="status-pill" class="status-pill glass" data-glass="0.35" type="button" title="Time &amp; weather — click for tweaks"></button>
+
+    <div id="edge-zone" class="edge-zone" aria-hidden="true"><span class="edge-line"></span></div>
+    <button id="gear" class="gear glass" data-glass="0.2" data-fade type="button" aria-label="Open tweaks" title="Tweaks"></button>
+    <aside id="drawer" class="drawer glass" data-glass="0.7" data-blur="10" data-fade aria-label="Tweaks" aria-hidden="true"></aside>
+
+    <dialog id="link-dialog" class="dialog glass" data-glass="0.72" data-blur="10">
+      <form method="dialog" id="link-form">
+        <h2 id="link-dialog-title">Add shortcut</h2>
+        <label>Name<input id="link-title" type="text" maxlength="40" placeholder="Optional" /></label>
+        <label>URL<input id="link-url" type="text" placeholder="example.com" required /></label>
+        <p id="link-error" class="error" hidden>Please enter a valid http(s) address.</p>
+        <div class="dialog-actions">
+          <button type="button" id="link-delete" class="btn danger">Remove</button>
+          <span class="spacer"></span>
+          <button type="button" id="link-cancel" class="btn">Cancel</button>
+          <button type="submit" id="link-save" class="btn primary">Save</button>
+        </div>
+      </form>
+    </dialog>
+
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>
