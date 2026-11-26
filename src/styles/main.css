@@ -120,7 +120,7 @@ button {
   top: 50%;
   left: 50%;
   translate: -50% -50%;
-  width: min(720px, calc(100vw - 32px));
+  width: min(var(--search-width, 720px), calc(100vw - 32px));
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -180,7 +180,7 @@ button {
 .greeting {
   margin: 0;
   font-family: var(--display);
-  font-size: clamp(26px, 3vw, 40px);
+  font-size: min(var(--greeting-size, 40px), 9vw);
   font-weight: 600;
   line-height: 1.15;
   letter-spacing: -0.02em;
@@ -378,8 +378,8 @@ button {
   position: relative;
   display: grid;
   place-items: center;
-  width: 46px;
-  height: 46px;
+  width: var(--link-size, 46px);
+  height: var(--link-size, 46px);
   border-radius: 50%;
   color: rgba(232, 235, 247, 0.82);
   text-decoration: none;
@@ -1048,7 +1048,7 @@ html.gl .dialog[data-glass] {
 /* Make room for the drawer instead of covering the search. */
 body.drawer-open .stage {
   left: calc((100vw - 342px) / 2);
-  width: min(720px, calc(100vw - 390px));
+  width: min(var(--search-width, 720px), calc(100vw - 390px));
 }
 .stage {
   transition: top 0.4s var(--ease-out), left 0.42s var(--ease-out), width 0.42s var(--ease-out);
@@ -1074,4 +1074,254 @@ html[data-style="vivid"] {
   * {
     transition: none !important;
   }
+}
+
+/* ------------------------------------------------- element options */
+
+/* Search box heights. */
+.composer[data-size="compact"] {
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 8px 7px 16px;
+  border-radius: 999px;
+}
+.composer[data-size="compact"] .composer-top {
+  flex: 1;
+  align-items: center;
+}
+.composer[data-size="compact"] textarea {
+  min-height: 26px;
+  line-height: 26px;
+}
+.composer[data-size="compact"] .composer-bottom .spacer {
+  display: none;
+}
+.composer[data-size="tall"] textarea {
+  min-height: 110px;
+}
+
+/* Shortcut names. */
+.links[data-labels="always"] {
+  row-gap: 30px;
+  margin-bottom: 18px;
+}
+.links[data-labels="always"] .link-label {
+  opacity: 1;
+}
+.links[data-labels="never"] .link-label {
+  display: none;
+}
+.link-icon svg {
+  width: calc(var(--link-size, 46px) * 0.4);
+  height: calc(var(--link-size, 46px) * 0.4);
+}
+.link-icon .letter {
+  font-size: calc(var(--link-size, 46px) * 0.33);
+}
+
+/* Weather pill corners (keeps clear of the settings button). */
+.status-pill[data-position="bottom-right"] {
+  left: auto;
+  right: 66px;
+}
+.status-pill[data-position="top-left"] {
+  bottom: auto;
+  top: 18px;
+}
+.status-pill[data-position="top-right"] {
+  left: auto;
+  bottom: auto;
+  right: 18px;
+  top: 18px;
+}
+
+/* Drawer: element list. */
+.section-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.section-head h3 {
+  margin-bottom: 0;
+}
+.btn.small {
+  height: 26px;
+  padding: 0 10px;
+  font-size: 11.5px;
+}
+details.el {
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  border-radius: 12px;
+  margin: 6px 0;
+  background: rgba(255, 255, 255, 0.025);
+  transition: border-color 0.3s ease, background 0.3s ease;
+}
+details.el[open] {
+  background: rgba(255, 255, 255, 0.045);
+}
+details.el.flash {
+  border-color: rgba(122, 162, 255, 0.7);
+  background: rgba(122, 162, 255, 0.12);
+}
+details.el > summary {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 38px;
+  padding: 0 10px 0 12px;
+  cursor: pointer;
+  list-style: none;
+  font-size: 12.5px;
+  font-weight: 500;
+}
+details.el > summary::-webkit-details-marker {
+  display: none;
+}
+.el-name {
+  flex: 1;
+}
+.el-chev {
+  display: grid;
+  color: var(--muted);
+  transition: rotate 0.2s ease;
+}
+details.el[open] .el-chev {
+  rotate: 180deg;
+}
+details.el.off .el-name {
+  color: var(--muted);
+}
+.el-body {
+  padding: 0 12px 10px;
+}
+.el-body .row input[type="text"] {
+  width: 150px;
+}
+
+/* ------------------------------------------------- customize mode */
+
+body.customizing .stage,
+body.customizing #status-pill,
+body.customizing #scenebar,
+body.customizing #gear,
+body.customizing #clockbox {
+  pointer-events: none;
+}
+.cz-layer {
+  position: fixed;
+  inset: 0;
+  z-index: 45;
+  pointer-events: none;
+}
+.cz-box {
+  position: fixed;
+  border: 1.5px dashed rgba(122, 162, 255, 0.75);
+  border-radius: 14px;
+  background: rgba(122, 162, 255, 0.05);
+  animation: cz-in 0.25s var(--ease-out);
+}
+@keyframes cz-in {
+  from {
+    opacity: 0;
+    scale: 0.97;
+  }
+}
+.cz-tag {
+  position: absolute;
+  left: 8px;
+  top: -10px;
+  padding: 1px 7px;
+  border-radius: 6px;
+  font: 600 10px/16px var(--mono);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #0b0d16;
+  background: var(--accent);
+}
+.cz-tools {
+  position: absolute;
+  right: -10px;
+  top: -12px;
+  display: flex;
+  gap: 4px;
+  pointer-events: auto;
+}
+.cz-btn {
+  width: 24px;
+  height: 24px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  background: rgba(14, 17, 28, 0.92);
+  color: var(--text);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.45);
+  transition: background 0.15s ease, transform 0.15s ease;
+}
+.cz-btn:hover {
+  transform: scale(1.1);
+  background: rgba(122, 162, 255, 0.4);
+}
+.cz-btn.danger:hover {
+  background: rgba(255, 77, 79, 0.75);
+}
+.cz-bar {
+  --blur: 12px;
+  position: fixed;
+  left: 50%;
+  bottom: 22px;
+  translate: -50% 0;
+  z-index: 46;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  max-width: calc(100vw - 32px);
+  padding: 8px 8px 8px 18px;
+  border-radius: 999px;
+  font-size: 12.5px;
+}
+.cz-title {
+  font-weight: 600;
+}
+.cz-hint {
+  color: var(--muted);
+  white-space: nowrap;
+}
+.cz-hidden {
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.cz-hidden .chip {
+  white-space: nowrap;
+  flex: none;
+}
+@media (max-width: 720px) {
+  .cz-hint {
+    display: none;
+  }
+}
+.cz-box.flip .cz-tools {
+  right: auto;
+  left: -10px;
+}
+.cz-box.flip .cz-tag {
+  left: auto;
+  right: 8px;
+}
+.cz-box.below .cz-tools {
+  top: auto;
+  bottom: -12px;
+}
+.cz-box.below .cz-tag {
+  top: auto;
+  bottom: -10px;
+}
+body.drawer-open .cz-bar {
+  left: calc((100vw - 342px) / 2);
+}
+body.drawer-open .cz-box[data-el="gear"] {
+  display: none;
 }

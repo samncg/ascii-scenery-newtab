@@ -17,7 +17,10 @@ export const SCENE_IDS: readonly SceneId[] = ['tokyo', 'cabin', 'sf', 'silhouett
 export interface Settings {
   scene: SceneId;
   name: string;
-  timeGreeting: boolean;
+  /** 'time' = Good morning…, 'hello' = Hello, 'custom' = greetingText. */
+  greetingMode: 'time' | 'hello' | 'custom';
+  greetingText: string;
+  greetingSize: number;
   engine: EngineId;
   links: QuickLink[];
   sync: boolean;
@@ -27,9 +30,19 @@ export interface Settings {
   units: 'c' | 'f';
   showClock: boolean;
   clock24: boolean;
+  showGreeting: boolean;
+  showSearch: boolean;
   showLinks: boolean;
   showStatus: boolean;
-  showHud: boolean;
+  showGear: boolean;
+  dateFormat: 'long' | 'short' | 'numeric';
+  searchSize: 'compact' | 'regular' | 'tall';
+  searchWidth: number;
+  showMic: boolean;
+  showEngine: boolean;
+  linkSize: number;
+  linkLabels: 'hover' | 'always' | 'never';
+  statusPosition: 'bottom-left' | 'bottom-right' | 'top-left' | 'top-right';
   hudPosition: 'top' | 'center';
   showSceneBar: boolean;
   /** 'ink' = dark grid look, 'vivid' = full-color skies. */
@@ -59,7 +72,9 @@ export const DEFAULT_LINKS: QuickLink[] = [
 export const DEFAULTS: Settings = {
   scene: 'tokyo',
   name: '',
-  timeGreeting: true,
+  greetingMode: 'time',
+  greetingText: '',
+  greetingSize: 40,
   engine: 'google',
   links: DEFAULT_LINKS,
   sync: true,
@@ -69,9 +84,19 @@ export const DEFAULTS: Settings = {
   units: 'c',
   showClock: true,
   clock24: false,
+  showGreeting: true,
+  showSearch: true,
   showLinks: true,
   showStatus: true,
-  showHud: true,
+  showGear: true,
+  dateFormat: 'long',
+  searchSize: 'regular',
+  searchWidth: 720,
+  showMic: true,
+  showEngine: true,
+  linkSize: 46,
+  linkLabels: 'hover',
+  statusPosition: 'bottom-left',
   hudPosition: 'center',
   showSceneBar: false,
   style: 'ink',
@@ -91,8 +116,15 @@ const OLD_KEY = 'asn:settings:v3';
 const oneOf = <T extends string>(v: unknown, allowed: readonly T[], fallback: T): T =>
   allowed.includes(v as T) ? (v as T) : fallback;
 
+type Legacy = Partial<Settings> & { showHud?: boolean; timeGreeting?: boolean };
+
 function sanitize(raw: unknown): Settings {
-  const r = (raw && typeof raw === 'object' ? raw : {}) as Partial<Settings>;
+  const r = (raw && typeof raw === 'object' ? raw : {}) as Legacy;
+  // Older versions had one switch for greeting + search, and a time-greeting toggle.
+  if (r.showHud === false) r.showGreeting = r.showSearch = r.showGreeting ?? false;
+  if (r.greetingMode === undefined && r.timeGreeting === false) r.greetingMode = 'hello';
+  delete r.showHud;
+  delete r.timeGreeting;
   const s: Settings = { ...DEFAULTS, ...r };
   s.scene = oneOf(s.scene, SCENE_IDS, DEFAULTS.scene);
   s.engine = oneOf(s.engine, ['google', 'duckduckgo', 'bing', 'brave', 'startpage', 'kagi', 'perplexity', 'chatgpt', 'claude'], 'google');
@@ -103,6 +135,15 @@ function sanitize(raw: unknown): Settings {
   s.style = oneOf(s.style, ['ink', 'vivid'], 'ink');
   s.name = typeof s.name === 'string' ? s.name.slice(0, 40) : '';
   s.density = Math.min(420, Math.max(100, Math.round(Number(s.density) || 248)));
+  s.greetingMode = oneOf(s.greetingMode, ['time', 'hello', 'custom'], 'time');
+  s.greetingText = typeof s.greetingText === 'string' ? s.greetingText.slice(0, 80) : '';
+  s.greetingSize = Math.min(96, Math.max(14, Math.round(Number(s.greetingSize) || 40)));
+  s.dateFormat = oneOf(s.dateFormat, ['long', 'short', 'numeric'], 'long');
+  s.searchSize = oneOf(s.searchSize, ['compact', 'regular', 'tall'], 'regular');
+  s.searchWidth = Math.min(1100, Math.max(320, Math.round(Number(s.searchWidth) || 720)));
+  s.linkSize = Math.min(72, Math.max(28, Math.round(Number(s.linkSize) || 46)));
+  s.linkLabels = oneOf(s.linkLabels, ['hover', 'always', 'never'], 'hover');
+  s.statusPosition = oneOf(s.statusPosition, ['bottom-left', 'bottom-right', 'top-left', 'top-right'], 'bottom-left');
   s.clockPosition = oneOf(s.clockPosition, ['above', 'below', 'top-left', 'top-right'], 'above');
   s.clockSize = Math.min(180, Math.max(14, Math.round(Number(s.clockSize) || 72)));
   s.animalSize = Math.min(2, Math.max(0.5, Number(s.animalSize) || 1));

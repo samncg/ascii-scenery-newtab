@@ -33,11 +33,17 @@ export class StatusPill {
     onClick: () => void,
   ) {
     this.el.addEventListener('click', onClick);
+    store.subscribe(() => {
+      const s = store.get();
+      this.el.hidden = !s.showStatus;
+      this.el.dataset.position = s.statusPosition;
+    });
   }
 
   update(time: TimeState): void {
     const s = this.store.get();
     this.el.hidden = !s.showStatus;
+    this.el.dataset.position = s.statusPosition;
     if (!s.showStatus) return;
     const night = time.phase === 'night' || time.phase === 'dusk';
     let parts: string[];

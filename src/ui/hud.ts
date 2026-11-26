@@ -30,6 +30,7 @@ export class Hud {
   private lastClock = '';
   private lastGreeting = '';
   private editing = false;
+  private micSupported = false;
 
   constructor(private store: SettingsStore) {
     $('#search-icon').append(icon(ICONS.search, 18));
@@ -74,11 +75,17 @@ export class Hud {
       }
     });
     this.setupMic();
-    this.greeting.title = 'Click to change your name';
+    this.greeting.title = 'Click to edit';
     this.greeting.addEventListener('click', () => this.editName());
     store.subscribe((_s, changed) => {
       if (changed.has('engine')) this.renderEngine();
-      if (['showHud', 'hudPosition', 'showClock', 'name', 'timeGreeting', 'clock24', 'clockPosition', 'clockSize', 'showDate'].some((k) => changed.has(k as never))) this.apply();
+      if (
+        [
+          'hudPosition', 'showClock', 'name', 'greetingMode', 'greetingText', 'greetingSize', 'clock24', 'clockPosition', 'clockSize',
+          'showDate', 'dateFormat', 'showGreeting', 'showSearch', 'searchSize', 'searchWidth', 'showMic', 'showEngine',
+        ].some((k) => changed.has(k as never))
+      )
+        this.apply();
     });
     this.renderEngine();
     this.apply();
@@ -104,7 +111,7 @@ export class Hud {
     const w = window as unknown as { SpeechRecognition?: new () => SpeechRec; webkitSpeechRecognition?: new () => SpeechRec };
     const Ctor = w.SpeechRecognition ?? w.webkitSpeechRecognition;
     if (!Ctor) return;
-    this.micBtn.hidden = false;
+    this.micSupported = true;
     let rec: SpeechRec | null = null;
     this.micBtn.addEventListener('click', () => {
       if (rec) {
@@ -137,21 +144,33 @@ export class Hud {
 
   private apply(): void {
     const s = this.store.get();
-    this.root.hidden = !s.showHud;
+    const root = document.documentElement.style;
     this.root.dataset.position = s.hudPosition;
-    // Place the clock: above the greeting, under the shortcuts, or in a corner.
+    // Clock + date: above the greeting, under the shortcuts, or in a corner.
     const box = this.clockbox;
-    box.hidden = !s.showClock;
+    box.hidden = !s.showClock && !s.showDate;
+    this.clock.hidden = !s.showClock;
+    this.date.hidden = !s.showDate;
     box.dataset.position = s.clockPosition;
     box.style.setProperty('--clock-size', `${s.clockSize}px`);
     if (s.clockPosition === 'above') $('.masthead').prepend(box);
     else if (s.clockPosition === 'below') $('.stage').append(box);
     else document.body.append(box);
-    this.date.hidden = !s.showDate;
+    // Greeting.
+    this.greeting.hidden = !s.showGreeting;
+    root.setProperty('--greeting-size', `${s.greetingSize}px`);
+    // Search box.
+    this.form.hidden = !s.showSearch;
+    this.form.dataset.size = s.searchSize;
+    this.input.rows = s.searchSize === 'compact' ? 1 : 2;
+    root.setProperty('--search-width', `${s.searchWidth}px`);
+    this.engineBtn.hidden = !s.showEngine;
+    this.micBtn.hidden = !s.showMic || !this.micSupported;
     this.lastClock = '';
     this.lastDate = '';
     this.lastGreeting = '';
     this.tick(new Date());
+    this.autosize();
   }
 
   private renderEngine(): void {
@@ -196,14 +215,18 @@ export class Hud {
     if (this.editing) return;
     this.editing = true;
     const input = h('input', { class: 'name-input', type: 'text', maxlength: 40, placeholder: 'Your name', 'aria-label': 'Your name' });
-    input.value = this.store.get().name;
+    // In custom mode the click edits the custom line; otherwise it edits the name.
+    const custom = this.store.get().greetingMode === 'custom';
+    input.placeholder = custom ? 'Your greeting' : 'Your name';
+    input.maxLength = custom ? 80 : 40;
+    input.value = custom ? this.store.get().greetingText : this.store.get().name;
     let done = false;
     const finish = (save: boolean) => {
       if (done) return;
       done = true;
       this.editing = false;
       this.lastGreeting = '';
-      if (save) this.store.update({ name: input.value.trim() });
+      if (save) this.store.update(custom ? { greetingText: input.value.trim() } : { name: input.value.trim() });
       this.tick(new Date());
     };
     input.addEventListener('keydown', (e) => {
@@ -225,13 +248,22 @@ export class Hud {
       this.lastClock = clock;
       this.clock.textContent = clock;
     }
-    const date = now.toLocaleDateString([], { weekday: 'long', month: 'long', day: 'numeric' });
+    const fmt: Intl.DateTimeFormatOptions =
+      s.dateFormat === 'short'
+        ? { weekday: 'short', month: 'short', day: 'numeric' }
+        : s.dateFormat === 'numeric'
+          ? { year: 'numeric', month: '2-digit', day: '2-digit' }
+          : { weekday: 'long', month: 'long', day: 'numeric' };
+    const date = now.toLocaleDateString([], fmt);
     if (date !== this.lastDate) {
       this.lastDate = date;
       this.date.textContent = date;
     }
     if (this.editing) return;
-    const text = greetingFor(now.getHours() + now.getMinutes() / 60, s.name, s.timeGreeting);
+    const text =
+      s.greetingMode === 'custom'
+        ? s.greetingText.replace(/\{name\}/g, s.name.trim()) || ' '
+        : greetingFor(now.getHours() + now.getMinutes() / 60, s.name, s.greetingMode === 'time');
     if (text !== this.lastGreeting) {
       this.lastGreeting = text;
       this.greeting.textContent = text;

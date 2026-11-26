@@ -3,6 +3,7 @@ import { geocode, type GeoLocation, fetchWeather, WEATHER_OPTIONS, type WeatherS
 import { SCENES } from '../scenes';
 import { DIRECTIONS, KOI_VARIETIES, type KoiVariety } from '../scenes/prefs';
 import { $, h, icon, ICONS } from './dom';
+import { ELEMENTS, type ElementId } from './elements';
 import { ENGINES } from './engines';
 import type { Settings, SettingsStore } from './settings';
 
@@ -20,6 +21,7 @@ export class Drawer {
   constructor(
     private store: SettingsStore,
     private weather: WeatherService,
+    private hooks: { addLink: () => void; customize: () => void },
   ) {
     this.gear.append(icon(ICONS.gear, 18));
     this.build();
@@ -48,11 +50,33 @@ export class Drawer {
     });
     document.addEventListener('keydown', (e) => {
       if (e.key === 'Escape' && this.mode !== 'closed') this.setMode('closed');
+      // "," toggles Tweaks: the way back in if the settings button is removed.
+      const t = e.target as HTMLElement;
+      const typing = t instanceof HTMLInputElement || t instanceof HTMLTextAreaElement || t instanceof HTMLSelectElement || t?.isContentEditable;
+      if (e.key === ',' && !typing && !e.ctrlKey && !e.metaKey && !e.altKey) {
+        e.preventDefault();
+        this.setMode(this.mode === 'pinned' ? 'closed' : 'pinned');
+      }
     });
   }
 
   open(): void {
     this.setMode('pinned');
+  }
+
+  close(): void {
+    this.setMode('closed');
+  }
+
+  /** Open Tweaks on one element's options. */
+  focusElement(id: ElementId): void {
+    this.setMode('pinned');
+    const d = this.el.querySelector<HTMLDetailsElement>(`details[data-el="${id}"]`);
+    if (!d) return;
+    this.el.querySelectorAll<HTMLDetailsElement>('details.el').forEach((x) => (x.open = x === d));
+    d.classList.add('flash');
+    setTimeout(() => d.classList.remove('flash'), 1200);
+    requestAnimationFrame(() => d.scrollIntoView({ block: 'center', behavior: 'smooth' }));
   }
 
   private maybeClose(): void {
@@ -194,18 +218,21 @@ export class Drawer {
     const nameInput = h('input', { type: 'text', maxlength: 40, placeholder: 'Your name', 'aria-label': 'Your name' });
     nameInput.addEventListener('input', () => set({ name: nameInput.value }));
     this.refs.name = nameInput;
+    const greetText = h('input', { type: 'text', maxlength: 80, placeholder: 'e.g. Welcome back, {name}', 'aria-label': 'Custom greeting' });
+    greetText.addEventListener('input', () => set({ greetingText: greetText.value }));
+    this.refs.greetingText = greetText;
 
     const size = h('input', { type: 'range', min: 100, max: 420, step: 4, 'aria-label': 'Detail' });
     size.addEventListener('change', () => set({ density: Number(size.value) }));
     this.refs.size = size;
 
     const range = (key: string, min: number, max: number, step: number, onchange: (v: number) => void) => {
-      const input = h('input', { type: 'range', min, max, step });
+      const input = h('input', { type: 'range', min, max, step, 'aria-label': key });
       input.addEventListener('input', () => onchange(Number(input.value)));
       this.refs[key] = input;
       return input;
     };
-    const clockSize = range('clockSize', 14, 180, 2, (v) => set({ clockSize: v }));
+    const rangeRow = (label: string, input: HTMLInputElement) => h('label', { class: 'row' }, h('span', { class: 'row-label', text: label }), input);
     const animalSize = range('animalSize', 50, 200, 5, (v) => set({ animalSize: v / 100 }));
     const koiChips = h(
       'div',
@@ -228,6 +255,79 @@ export class Drawer {
     );
     this.refs.koiChips = koiChips;
 
+    // Options for each on-page element.
+    const options: Record<ElementId, Node[]> = {
+      clock: [
+        select('clockPosition', 'Position', [
+          { id: 'above', label: 'Above greeting' },
+          { id: 'below', label: 'Below shortcuts' },
+          { id: 'top-left', label: 'Top left' },
+          { id: 'top-right', label: 'Top right' },
+        ], (v) => set({ clockPosition: v as Settings['clockPosition'] })),
+        rangeRow('Size', range('clockSize', 14, 180, 2, (v) => set({ clockSize: v }))),
+        toggle('clock24', '24-hour clock'),
+      ],
+      date: [
+        select('dateFormat', 'Format', [
+          { id: 'long', label: 'Thursday, November 27' },
+          { id: 'short', label: 'Thu, Nov 27' },
+          { id: 'numeric', label: '11/27/2026' },
+        ], (v) => set({ dateFormat: v as Settings['dateFormat'] })),
+      ],
+      greeting: [
+        select('greetingMode', 'Text', [
+          { id: 'time', label: 'By time of day' },
+          { id: 'hello', label: 'Hello' },
+          { id: 'custom', label: 'Custom' },
+        ], (v) => set({ greetingMode: v as Settings['greetingMode'] })),
+        h('label', { class: 'row', 'data-show': 'custom' }, h('span', { class: 'row-label' }, 'Custom', h('small', { text: '{name} inserts your name' })), greetText),
+        h('label', { class: 'row' }, h('span', { class: 'row-label', text: 'Name' }), nameInput),
+        rangeRow('Size', range('greetingSize', 14, 96, 1, (v) => set({ greetingSize: v }))),
+      ],
+      search: [
+        select('engine', 'Engine', ENGINES.map((e) => ({ id: e.id, label: e.name })), (v) => set({ engine: v as Settings['engine'] })),
+        segmented('searchSize', 'Height', [{ id: 'compact', label: 'Compact' }, { id: 'regular', label: 'Regular' }, { id: 'tall', label: 'Tall' }], (v) =>
+          set({ searchSize: v as Settings['searchSize'] }),
+        ),
+        rangeRow('Width', range('searchWidth', 320, 1100, 10, (v) => set({ searchWidth: v }))),
+        toggle('showEngine', 'Engine picker'),
+        toggle('showMic', 'Voice button', 'Chromium browsers only'),
+      ],
+      links: [
+        rangeRow('Icon size', range('linkSize', 28, 72, 1, (v) => set({ linkSize: v }))),
+        segmented('linkLabels', 'Names', [{ id: 'hover', label: 'On hover' }, { id: 'always', label: 'Always' }, { id: 'never', label: 'Never' }], (v) =>
+          set({ linkLabels: v as Settings['linkLabels'] }),
+        ),
+        h('div', { class: 'row' }, h('button', { type: 'button', class: 'btn', text: '+ Add shortcut', onclick: () => this.hooks.addLink() })),
+      ],
+      status: [
+        select('statusPosition', 'Position', [
+          { id: 'bottom-left', label: 'Bottom left' },
+          { id: 'bottom-right', label: 'Bottom right' },
+          { id: 'top-left', label: 'Top left' },
+          { id: 'top-right', label: 'Top right' },
+        ], (v) => set({ statusPosition: v as Settings['statusPosition'] })),
+      ],
+      scenebar: [h('p', { class: 'hint', text: 'A pill of scene buttons across the top of the page.' })],
+      gear: [h('p', { class: 'hint', text: 'Without it, open Tweaks by hovering the right edge of the screen or pressing the comma key.' })],
+    };
+    const elementList = ELEMENTS.map(({ id, label, key }) => {
+      const sw = h('input', {
+        type: 'checkbox',
+        class: 'switch',
+        'aria-label': `Show ${label}`,
+        onchange: (e: Event) => set({ [key]: (e.target as HTMLInputElement).checked } as Partial<Settings>),
+      });
+      sw.addEventListener('click', (e) => e.stopPropagation());
+      this.refs[`t-${key}`] = sw;
+      return h(
+        'details',
+        { class: 'el', 'data-el': id },
+        h('summary', {}, h('span', { class: 'el-name', text: label }), h('span', { class: 'el-chev', 'aria-hidden': 'true' }, icon(ICONS.chevron, 14)), sw),
+        h('div', { class: 'el-body' }, ...options[id]),
+      );
+    });
+
     this.el.replaceChildren(
       h(
         'header',
@@ -239,6 +339,36 @@ export class Drawer {
         'div',
         { class: 'drawer-body' },
         h('section', {}, h('h3', { text: 'Scene' }), sceneGrid),
+        h(
+          'section',
+          {},
+          h(
+            'div',
+            { class: 'section-head' },
+            h('h3', { text: 'Elements' }),
+            h('button', {
+              type: 'button',
+              class: 'btn ghost small',
+              text: 'Customize on page',
+              onclick: () => {
+                this.setMode('closed');
+                this.hooks.customize();
+              },
+            }),
+          ),
+          h('p', { class: 'hint', text: 'Switch an element off to remove it, or open it to change it.' }),
+          ...elementList,
+          h(
+            'div',
+            { class: 'row' },
+            h('button', {
+              type: 'button',
+              class: 'btn ghost small',
+              text: 'Show everything',
+              onclick: () => set(Object.fromEntries(ELEMENTS.map((e) => [e.key, true])) as Partial<Settings>),
+            }),
+          ),
+        ),
         h(
           'section',
           {},
@@ -270,41 +400,9 @@ export class Drawer {
         h(
           'section',
           {},
-          h('h3', { text: 'Clock' }),
-          toggle('showClock', 'Show clock'),
-          select('clockPosition', 'Position', [
-            { id: 'above', label: 'Above greeting' },
-            { id: 'below', label: 'Below shortcuts' },
-            { id: 'top-left', label: 'Top left' },
-            { id: 'top-right', label: 'Top right' },
-          ], (v) => set({ clockPosition: v as Settings['clockPosition'] })),
-          h('label', { class: 'row' }, h('span', { class: 'row-label', text: 'Size' }), clockSize),
-          toggle('clock24', '24-hour clock'),
-          toggle('showDate', 'Show date'),
-        ),
-        h(
-          'section',
-          {},
-          h('h3', { text: 'Greeting' }),
-          h('label', { class: 'row' }, h('span', { class: 'row-label', text: 'Name' }), nameInput),
-          toggle('timeGreeting', 'Greet by time of day', 'Good morning… Still up?'),
-        ),
-        h(
-          'section',
-          {},
-          h('h3', { text: 'Search' }),
-          select('engine', 'Engine', ENGINES.map((e) => ({ id: e.id, label: e.name })), (v) => set({ engine: v as Settings['engine'] })),
-        ),
-        h(
-          'section',
-          {},
           h('h3', { text: 'Display' }),
           segmented('style', 'Style', [{ id: 'ink', label: 'Ink' }, { id: 'vivid', label: 'Vivid' }], (v) => set({ style: v as 'ink' | 'vivid' })),
-          toggle('showSceneBar', 'Scene bar'),
-          toggle('showHud', 'Greeting & search'),
-          toggle('showLinks', 'Shortcuts'),
-          toggle('showStatus', 'Weather & time pill'),
-          segmented('hudPosition', 'Layout', [{ id: 'top', label: 'Top' }, { id: 'center', label: 'Center' }], (v) => set({ hudPosition: v as 'top' | 'center' })),
+          segmented('hudPosition', 'Layout', [{ id: 'top', label: 'Higher' }, { id: 'center', label: 'Centered' }], (v) => set({ hudPosition: v as 'top' | 'center' })),
           h('label', { class: 'row' }, h('span', { class: 'row-label' }, 'Detail', h('small', { text: 'Columns across the screen' })), size),
         ),
         h(
@@ -326,21 +424,36 @@ export class Drawer {
 
   /** Reflect settings into the controls. */
   sync(s: Readonly<Settings>): void {
-    for (const key of ['sync', 'timeGreeting', 'showSceneBar', 'showHud', 'showClock', 'clock24', 'showDate', 'showLinks', 'showStatus'] as const) {
-      (this.refs[`t-${key}`] as HTMLInputElement).checked = s[key];
+    const bools = ['sync', 'clock24', 'showEngine', 'showMic', ...ELEMENTS.map((e) => e.key)] as const;
+    for (const key of bools) {
+      const el = this.refs[`t-${key}`] as HTMLInputElement | undefined;
+      if (el) el.checked = s[key];
     }
-    (this.refs.time as HTMLSelectElement).value = s.manualTime;
-    (this.refs.weather as HTMLSelectElement).value = s.manualWeather;
-    (this.refs.engine as HTMLSelectElement).value = s.engine;
+    const val = (key: string, v: string | number) => {
+      const el = this.refs[key] as HTMLInputElement | HTMLSelectElement | undefined;
+      if (el && document.activeElement !== el) el.value = String(v);
+    };
+    val('time', s.manualTime);
+    val('weather', s.manualWeather);
+    val('engine', s.engine);
+    val('name', s.name);
+    val('greetingText', s.greetingText);
+    val('greetingMode', s.greetingMode);
+    val('size', s.density);
+    val('clockSize', s.clockSize);
+    val('clockPosition', s.clockPosition);
+    val('dateFormat', s.dateFormat);
+    val('greetingSize', s.greetingSize);
+    val('searchWidth', s.searchWidth);
+    val('linkSize', s.linkSize);
+    val('statusPosition', s.statusPosition);
+    val('animalSize', Math.round(s.animalSize * 100));
+    val('animalDirection', s.animalDirection);
     this.refs.time.parentElement!.classList.toggle('dim', s.sync);
     this.refs.weather.parentElement!.classList.toggle('dim', s.sync);
-    const name = this.refs.name as HTMLInputElement;
-    if (document.activeElement !== name) name.value = s.name;
-    (this.refs.size as HTMLInputElement).value = String(s.density);
-    (this.refs.clockSize as HTMLInputElement).value = String(s.clockSize);
-    (this.refs.animalSize as HTMLInputElement).value = String(Math.round(s.animalSize * 100));
-    (this.refs.clockPosition as HTMLSelectElement).value = s.clockPosition;
-    (this.refs.animalDirection as HTMLSelectElement).value = s.animalDirection;
+    this.el.querySelectorAll<HTMLElement>('[data-show="custom"]').forEach((e) => (e.hidden = s.greetingMode !== 'custom'));
+    // Dim the options of elements that are switched off.
+    for (const e of ELEMENTS) this.el.querySelector(`details[data-el="${e.id}"]`)?.classList.toggle('off', !s[e.key]);
     this.refs.koiChips.querySelectorAll<HTMLButtonElement>('.chip').forEach((b) => {
       const on = s.koiVarieties.includes(b.dataset.koi as KoiVariety);
       b.classList.toggle('on', on);
@@ -355,6 +468,9 @@ export class Drawer {
     seg('units', s.units);
     seg('style', s.style);
     seg('hudPosition', s.hudPosition);
+    seg('searchSize', s.searchSize);
+    seg('linkLabels', s.linkLabels);
+    this.gear.hidden = !s.showGear;
     this.el.querySelectorAll<HTMLButtonElement>('.scene-btn').forEach((b) => b.classList.toggle('on', b.dataset.scene === s.scene));
     this.syncWeather();
   }

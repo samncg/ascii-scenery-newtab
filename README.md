@@ -45,8 +45,14 @@ Chrome will warn about the unknown `browser_specific_settings` key; that key is 
 
 ## Using it
 
+- **Make it yours:** every element can be removed or changed: clock, date, greeting, search box, shortcuts, weather pill, scene bar and the settings button.
+  - **Tweaks → Elements** lists them all. Use the switch to show or hide each one, and open it for its options.
+  - **Customize on page** outlines every element with ✎ (change) and × (remove), plus a bar to bring removed ones back.
+  - If you remove the settings button, open Tweaks by hovering the right edge or pressing **,** (comma).
 - **Clock:** large and bold by default, with an optional date line. In Tweaks → Clock, place it above the greeting, below the shortcuts, or in the top-left / top-right corner, and set its size (14–180 px) and 12/24-hour format.
-- **Greeting:** time-aware ("Good morning…", "Still up, Sam?"). Click it to set your name.
+- **Greeting:** time-aware ("Good morning…", "Still up, Sam?"), plain "Hello", or your own text (`{name}` inserts your name), at any size. Click it to edit.
+- **Search box:** compact (one line), regular or tall, adjustable width, with optional engine picker and voice button.
+- **Weather pill:** any corner.
 - **Search:** a glass composer. Press Enter to search; Shift+Enter adds a new line. Text that looks like a web address opens that address directly. Use the engine chip to pick Google, DuckDuckGo, Bing, Brave, Startpage, Kagi, Perplexity, ChatGPT or Claude. The mic button appears in browsers that support speech recognition (Chromium).
 - **Shortcuts:** minimal round icons (mail, video, code, chat, AI, docs… picked from the site's address; unknown sites show their initial). Hover one to see its name. Use "+" to add a shortcut, and hover → ✎ (or right-click) to edit or remove one. Drag icons to reorder.
 - **Scene bar:** a pill switcher for the top of the screen. It is hidden by default; turn it on in Tweaks → Display.
@@ -56,8 +62,8 @@ Chrome will warn about the unknown `browser_specific_settings` key; that key is 
   - Location: city search, or "Use my location" (the browser will ask permission), plus °C/°F
   - Greeting name, search engine
   - Animals: creature size (50–200%), travel direction (free roam, left → right, right → left, upward, downward) and which koi varieties swim (Kohaku, Sanke, Showa, Ogon, Tancho, Asagi, Chagoi, Yamabuki, Shiro Utsuri, Ki Utsuri, Kumonryu, Goshiki)
-  - Clock: show/hide, position, size, 24-hour format, date line
-  - Display: Ink / Vivid style, Detail (number of columns), and toggles for the shortcuts, scene bar and status pill
+  - Elements: show/hide and options for every on-page element (see above)
+  - Display: Ink / Vivid style, layout (higher / centered), Detail (number of columns)
 - **Status pill** (bottom-left): e.g. `Tokyo · 22°C · Light rain`. Click it to open Tweaks.
 
 ### Live weather
@@ -118,6 +124,8 @@ src/
     hud.ts               Greeting, clock, composer, engine picker, voice input
     links.ts             Shortcut icons (add / edit / remove / drag to reorder)
     glass.ts             Tracks [data-glass] elements for the glass shader
+    elements.ts          Registry of removable / changeable page elements
+    customize.ts         On-page customize mode (outlines, ✎ / ×, restore bar)
     scenebar.ts          Top scene switcher
     drawer.ts            Tweaks drawer
     status.ts            Weather & time pill

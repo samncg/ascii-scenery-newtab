@@ -11,6 +11,7 @@ import { makeScene } from './scenes';
 import { scenePrefs } from './scenes/prefs';
 import type { Env, Scene } from './scenes/types';
 import { $ } from './ui/dom';
+import { Customizer } from './ui/customize';
 import { Drawer } from './ui/drawer';
 import { Hud } from './ui/hud';
 import { Links } from './ui/links';
@@ -33,9 +34,13 @@ const weather = new WeatherService(() => {
   drawer?.syncWeather();
 });
 const hud = new Hud(store);
-new Links(store);
+const links = new Links(store);
 new SceneBar(store);
-const drawer: Drawer = new Drawer(store, weather);
+const drawer: Drawer = new Drawer(store, weather, {
+  addLink: () => links.add(),
+  customize: () => customizer.start(),
+});
+const customizer = new Customizer(store, (id) => drawer.focusElement(id));
 const pill = new StatusPill(store, weather, () => drawer.open());
 weather.setLocation(store.get().location);
 

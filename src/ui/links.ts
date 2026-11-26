@@ -48,7 +48,7 @@ export class Links {
 
   constructor(private store: SettingsStore) {
     store.subscribe((_s, changed) => {
-      if (changed.has('links') || changed.has('showLinks')) this.render();
+      if (changed.has('links') || changed.has('showLinks') || changed.has('linkSize') || changed.has('linkLabels')) this.render();
     });
     $('#link-form').addEventListener('submit', (e) => {
       e.preventDefault();
@@ -68,6 +68,8 @@ export class Links {
   private render(): void {
     const s = this.store.get();
     this.nav.hidden = !s.showLinks;
+    this.nav.dataset.labels = s.linkLabels;
+    this.nav.style.setProperty('--link-size', `${s.linkSize}px`);
     const tiles = s.links.map((l) => this.tile(l));
     if (s.links.length < MAX_LINKS) {
       tiles.push(
@@ -145,6 +147,11 @@ export class Links {
       this.store.update({ links });
     });
     return a;
+  }
+
+  /** Open the add-shortcut dialog (used from Tweaks). */
+  add(): void {
+    this.open(null);
   }
 
   private open(l: QuickLink | null): void {
