@@ -1,5 +1,5 @@
 import { HAS, type Grid } from './grid';
-import { CELL_RATIO, cellWidth, INK, inkStops, MONO_STACK, type FrameStyle, type GlassPanel, type IRenderer, type RenderStyle } from './render-common';
+import { CELL_RATIO, cellWidth, INK, inkStops, fontState, type FrameStyle, type GlassPanel, type IRenderer, type RenderStyle } from './render-common';
 
 // ---------------------------------------------------------------------------
 // Shaders
@@ -136,8 +136,7 @@ void main() { o = texture(uSrc, gl_FragCoord.xy / uRes); }`;
 /**
  * Liquid glass: refracts the live scene through a rounded slab. Light bends
  * hardest at the bevelled rim (with per-channel chromatic aberration), the
- * centre magnifies slightly, the slab is lightly frosted and lit from the
- * top-left.
+ * centre magnifies slightly and the slab is lightly frosted. No shine.
  */
 const FS_GLASS = `#version 300 es
 precision highp float;
@@ -193,13 +192,8 @@ void main() {
 
   col = mix(col, vec3(0.012, 0.015, 0.028), uDark);
 
-  vec2 L = normalize(vec2(-0.55, 0.85));
-  float rim = smoothstep(2.2 * uDpr, 0.0, -d);
-  float spec = pow(max(dot(n, L), 0.0), 2.0);
-  float back = pow(max(dot(n, -L), 0.0), 3.0);
-  col += rim * (0.05 + 0.55 * spec + 0.16 * back);
-  col += vec3(0.75, 0.85, 1.0) * bend * 0.07;
-  col += 0.03 * clamp(q.y / hs.y, 0.0, 1.0);
+  // Flat, even hairline so small panels stay visible on black.
+  col = mix(col, vec3(1.0), smoothstep(1.5 * uDpr, 0.0, -d) * 0.09);
   o = vec4(col, aa * uOpacity);
 }`;
 
@@ -226,7 +220,7 @@ class Atlas {
     this.canvas.height = this.slotH * this.slotRows;
     const c = this.ctx;
     c.clearRect(0, 0, this.canvas.width, this.canvas.height);
-    c.font = `600 ${fontPx}px ${MONO_STACK}`;
+    c.font = `600 ${fontPx}px ${fontState.stack}`;
     c.textAlign = 'center';
     c.textBaseline = 'middle';
     c.fillStyle = '#fff';

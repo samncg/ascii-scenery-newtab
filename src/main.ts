@@ -13,6 +13,7 @@ import type { Env, Scene } from './scenes/types';
 import { $ } from './ui/dom';
 import { Customizer } from './ui/customize';
 import { Drawer } from './ui/drawer';
+import { applyFonts } from './ui/fonts';
 import { Hud } from './ui/hud';
 import { Links } from './ui/links';
 import { SettingsStore } from './ui/settings';
@@ -57,6 +58,7 @@ function syncPrefs(): void {
 
 function layout(): void {
   syncPrefs();
+  applyFonts(store.get());
   const s = store.get();
   document.documentElement.dataset.style = s.style;
   renderer.resize(s.density, s.style);
@@ -79,6 +81,10 @@ store.subscribe((s, changed) => {
       layout();
       canvas.classList.remove('fade');
     }, 220);
+  }
+  if (changed.has('fonts') && applyFonts(s)) {
+    // Load the new ASCII font before re-measuring the glyph atlas.
+    void document.fonts?.load(`600 16px ${s.fonts.ascii === 'geist-mono' ? '"Geist Mono"' : 'serif'}`).finally(() => layout());
   }
   if (changed.has('density') || changed.has('style')) layout();
   // Size and varieties are baked in when a scene starts; direction is read live.

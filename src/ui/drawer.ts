@@ -5,6 +5,7 @@ import { DIRECTIONS, KOI_VARIETIES, type KoiVariety } from '../scenes/prefs';
 import { $, h, icon, ICONS } from './dom';
 import { ELEMENTS, type ElementId } from './elements';
 import { ENGINES } from './engines';
+import { ASCII_FONTS, FONT_TARGETS, FONTS, type FontId, type FontTarget } from './fonts';
 import type { Settings, SettingsStore } from './settings';
 
 type Mode = 'closed' | 'hover' | 'pinned';
@@ -50,10 +51,11 @@ export class Drawer {
     });
     document.addEventListener('keydown', (e) => {
       if (e.key === 'Escape' && this.mode !== 'closed') this.setMode('closed');
-      // "," toggles Tweaks: the way back in if the settings button is removed.
+      // "," toggles Tweaks: a way back in if the settings button is removed.
       const t = e.target as HTMLElement;
       const typing = t instanceof HTMLInputElement || t instanceof HTMLTextAreaElement || t instanceof HTMLSelectElement || t?.isContentEditable;
-      if (e.key === ',' && !typing && !e.ctrlKey && !e.metaKey && !e.altKey) {
+      // (Only while the search box is hidden: otherwise a comma is typed into it.)
+      if (e.key === ',' && !typing && !e.ctrlKey && !e.metaKey && !e.altKey && !this.store.get().showSearch) {
         e.preventDefault();
         this.setMode(this.mode === 'pinned' ? 'closed' : 'pinned');
       }
@@ -255,6 +257,14 @@ export class Drawer {
     );
     this.refs.koiChips = koiChips;
 
+    const font = (target: FontTarget, label = 'Font') =>
+      select(
+        `font-${target}`,
+        label,
+        FONTS.filter((f) => target !== 'ascii' || ASCII_FONTS.includes(f.id)).map((f) => ({ id: f.id, label: f.label })),
+        (v) => set({ fonts: { ...this.store.get().fonts, [target]: v as FontId } }),
+      );
+
     // Options for each on-page element.
     const options: Record<ElementId, Node[]> = {
       clock: [
@@ -266,6 +276,7 @@ export class Drawer {
         ], (v) => set({ clockPosition: v as Settings['clockPosition'] })),
         rangeRow('Size', range('clockSize', 14, 180, 2, (v) => set({ clockSize: v }))),
         toggle('clock24', '24-hour clock'),
+        font('clock'),
       ],
       date: [
         select('dateFormat', 'Format', [
@@ -273,6 +284,7 @@ export class Drawer {
           { id: 'short', label: 'Thu, Nov 27' },
           { id: 'numeric', label: '11/27/2026' },
         ], (v) => set({ dateFormat: v as Settings['dateFormat'] })),
+        font('date'),
       ],
       greeting: [
         select('greetingMode', 'Text', [
@@ -283,6 +295,7 @@ export class Drawer {
         h('label', { class: 'row', 'data-show': 'custom' }, h('span', { class: 'row-label' }, 'Custom', h('small', { text: '{name} inserts your name' })), greetText),
         h('label', { class: 'row' }, h('span', { class: 'row-label', text: 'Name' }), nameInput),
         rangeRow('Size', range('greetingSize', 14, 96, 1, (v) => set({ greetingSize: v }))),
+        font('greeting'),
       ],
       search: [
         select('engine', 'Engine', ENGINES.map((e) => ({ id: e.id, label: e.name })), (v) => set({ engine: v as Settings['engine'] })),
@@ -292,6 +305,7 @@ export class Drawer {
         rangeRow('Width', range('searchWidth', 320, 1100, 10, (v) => set({ searchWidth: v }))),
         toggle('showEngine', 'Engine picker'),
         toggle('showMic', 'Voice button', 'Chromium browsers only'),
+        font('search'),
       ],
       links: [
         rangeRow('Icon size', range('linkSize', 28, 72, 1, (v) => set({ linkSize: v }))),
@@ -299,6 +313,7 @@ export class Drawer {
           set({ linkLabels: v as Settings['linkLabels'] }),
         ),
         h('div', { class: 'row' }, h('button', { type: 'button', class: 'btn', text: '+ Add shortcut', onclick: () => this.hooks.addLink() })),
+        font('links'),
       ],
       status: [
         select('statusPosition', 'Position', [
@@ -307,9 +322,10 @@ export class Drawer {
           { id: 'top-left', label: 'Top left' },
           { id: 'top-right', label: 'Top right' },
         ], (v) => set({ statusPosition: v as Settings['statusPosition'] })),
+        font('status'),
       ],
       scenebar: [h('p', { class: 'hint', text: 'A pill of scene buttons across the top of the page.' })],
-      gear: [h('p', { class: 'hint', text: 'Without it, open Tweaks by hovering the right edge of the screen or pressing the comma key.' })],
+      gear: [h('p', { class: 'hint', text: 'Without it, open Tweaks by hovering the right edge of the screen (or pressing the comma key when the search box is hidden).' })],
     };
     const elementList = ELEMENTS.map(({ id, label, key }) => {
       const sw = h('input', {
@@ -402,6 +418,7 @@ export class Drawer {
           {},
           h('h3', { text: 'Display' }),
           segmented('style', 'Style', [{ id: 'ink', label: 'Ink' }, { id: 'vivid', label: 'Vivid' }], (v) => set({ style: v as 'ink' | 'vivid' })),
+          font('ascii', 'Scene font'),
           segmented('hudPosition', 'Layout', [{ id: 'top', label: 'Higher' }, { id: 'center', label: 'Centered' }], (v) => set({ hudPosition: v as 'top' | 'center' })),
           h('label', { class: 'row' }, h('span', { class: 'row-label' }, 'Detail', h('small', { text: 'Columns across the screen' })), size),
         ),
@@ -449,6 +466,7 @@ export class Drawer {
     val('statusPosition', s.statusPosition);
     val('animalSize', Math.round(s.animalSize * 100));
     val('animalDirection', s.animalDirection);
+    for (const t of FONT_TARGETS) val(`font-${t}`, s.fonts[t]);
     this.refs.time.parentElement!.classList.toggle('dim', s.sync);
     this.refs.weather.parentElement!.classList.toggle('dim', s.sync);
     this.el.querySelectorAll<HTMLElement>('[data-show="custom"]').forEach((e) => (e.hidden = s.greetingMode !== 'custom'));

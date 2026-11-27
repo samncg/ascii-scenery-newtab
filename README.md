@@ -2,8 +2,8 @@
 
 A calm New Tab page made of animated ASCII art: bold Geist Mono glyphs on near-black, a fine cell grid, color tiles and real liquid-glass UI. Every scene follows your local clock and the live weather, and animates at your display's full refresh rate.
 
-**Scenery:** Tokyo Balcony · Forest Cabin · San Francisco (Golden Gate) · Forest Silhouette (golden sunset / Milky Way) · Aurora
-**Animals:** Koi · Butterflies · Manta Rays · Jellyfish · Window Cat · Fox & Owl
+**Scenery:** Tokyo Balcony · San Francisco (Golden Gate) · Forest Silhouette (golden sunset / Milky Way) · Aurora · Desert Dunes · Ocean Shore (with a lighthouse at night)
+**Animals:** Koi · Butterflies · Manta Rays · Jellyfish · Whales · Sea Turtles · Starlings (murmuration) · Fireflies
 
 Built with Vite + TypeScript + plain CSS as a Manifest V3 extension for **Firefox** and **Chrome / Edge**.
 
@@ -48,9 +48,11 @@ Chrome will warn about the unknown `browser_specific_settings` key; that key is 
 - **Make it yours:** every element can be removed or changed: clock, date, greeting, search box, shortcuts, weather pill, scene bar and the settings button.
   - **Tweaks → Elements** lists them all. Use the switch to show or hide each one, and open it for its options.
   - **Customize on page** outlines every element with ✎ (change) and × (remove), plus a bar to bring removed ones back.
-  - If you remove the settings button, open Tweaks by hovering the right edge or pressing **,** (comma).
+  - If you remove the settings button, open Tweaks by hovering the right edge (or press **,** when the search box is hidden).
+- **Fonts:** pick a font for the clock, date, greeting, search box, shortcut names and weather pill, plus a scene font for the ASCII art itself (Tweaks → Elements / Display). Geist and Geist Mono are bundled; the other choices (serif, rounded, typewriter, condensed, handwriting…) use fonts already on your system.
 - **Clock:** large and bold by default, with an optional date line. In Tweaks → Clock, place it above the greeting, below the shortcuts, or in the top-left / top-right corner, and set its size (14–180 px) and 12/24-hour format.
 - **Greeting:** time-aware ("Good morning…", "Still up, Sam?"), plain "Hello", or your own text (`{name}` inserts your name), at any size. Click it to edit.
+- **Type anywhere:** once the page has focus, just start typing; keys go straight into the search box. (In Chrome a new tab starts with focus in the address bar, so click the page once first.)
 - **Search box:** compact (one line), regular or tall, adjustable width, with optional engine picker and voice button.
 - **Weather pill:** any corner.
 - **Search:** a glass composer. Press Enter to search; Shift+Enter adds a new line. Text that looks like a web address opens that address directly. Use the engine chip to pick Google, DuckDuckGo, Bing, Brave, Startpage, Kagi, Perplexity, ChatGPT or Claude. The mic button appears in browsers that support speech recognition (Chromium).
@@ -84,7 +86,7 @@ Time of day blends smoothly through dawn, morning, day, golden hour, sunset, dus
 
 ### Rendering
 - **WebGL2** draws the whole character grid in a single GPU pass from a glyph atlas. The default density is about 4× the cells of a typical ASCII page (≈250 columns), and there is no frame cap: animation runs every display refresh (60 / 120 / 144 Hz) and all motion is time-based. Detail can be lowered in Tweaks on slow machines.
-- **Liquid glass** is rendered by a shader, not CSS: each glass panel (search, shortcuts, drawer, pills) really refracts the live scene behind it. The rim bends light the most, with per-channel chromatic aberration; the centre slightly magnifies; the slab is lightly frosted and lit from the top-left. This works the same in Firefox and Chrome.
+- **Liquid glass** is rendered by a shader, not CSS: each glass panel (search, shortcuts, drawer, pills) really refracts the live scene behind it. The rim bends light the most, with per-channel chromatic aberration; the centre slightly magnifies; the slab is lightly frosted, with no shine or highlights. This works the same in Firefox and Chrome.
 - Without WebGL2, the page falls back to a Canvas 2D renderer with CSS frosted glass, at a lower density.
 
 ---
@@ -112,9 +114,10 @@ src/
     weather.ts           Open-Meteo geocoding/forecast, WMO mapping, cache
     atmosphere.ts        Stars, sun, moon, clouds, birds, rain, snow, fog, lightning
   scenes/
-    tokyo.ts cabin.ts sf.ts silhouette.ts aurora.ts      Scenery
+    tokyo.ts sf.ts silhouette.ts aurora.ts dunes.ts ocean.ts   Scenery
     koi.ts butterflies.ts mantas.ts jellyfish.ts         Creatures on black
-    cat.ts clearing.ts                                   Window cat, fox & owl
+    whales.ts turtles.ts fireflies.ts                    More creatures on black
+    starlings.ts                                         Murmuration over a reed bed
     ink.ts               Ink-field rasterizer for creatures (tiles → glyphs → dots)
     common.ts            Pines, ridges, smoke plumes, fireflies, sprite mirroring
     types.ts, index.ts   Scene interface + registry
@@ -124,6 +127,7 @@ src/
     hud.ts               Greeting, clock, composer, engine picker, voice input
     links.ts             Shortcut icons (add / edit / remove / drag to reorder)
     glass.ts             Tracks [data-glass] elements for the glass shader
+    fonts.ts             Font choices per element and for the ASCII art
     elements.ts          Registry of removable / changeable page elements
     customize.ts         On-page customize mode (outlines, ✎ / ×, restore bar)
     scenebar.ts          Top scene switcher

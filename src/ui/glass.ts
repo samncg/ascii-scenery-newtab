@@ -9,7 +9,7 @@ import type { GlassPanel } from '../core/render-common';
  *   data-fade          → panel animates its opacity (read it every frame)
  */
 export class GlassTracker {
-  private radius = new WeakMap<Element, number>();
+  private radius = new WeakMap<Element, { sig: string; rad: number }>();
 
   constructor() {
     window.addEventListener('resize', () => (this.radius = new WeakMap()));
@@ -32,11 +32,15 @@ export class GlassTracker {
       }
       if (el.tagName === 'DIALOG' && !(el as HTMLDialogElement).open) continue;
       if (opacity <= 0.01) continue;
-      let rad = this.radius.get(el);
-      if (rad === undefined) {
-        rad = parseFloat(getComputedStyle(el).borderTopLeftRadius) || 0;
-        this.radius.set(el, rad);
+      // Re-read the corner radius whenever the element's attributes change
+      // (e.g. the search box switching between compact and regular).
+      const sig = `${el.className}|${el.dataset.size ?? ''}|${r.width | 0}x${r.height | 0}`;
+      let cached = this.radius.get(el);
+      if (!cached || cached.sig !== sig) {
+        cached = { sig, rad: parseFloat(getComputedStyle(el).borderTopLeftRadius) || 0 };
+        this.radius.set(el, cached);
       }
+      const rad = cached.rad;
       out.push({
         x: r.left,
         y: r.top,

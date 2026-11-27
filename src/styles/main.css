@@ -20,8 +20,7 @@
   --accent-edge: rgba(122, 162, 255, 0.45);
   --glass-edge: rgba(255, 255, 255, 0.14);
   --glass-glow: rgba(122, 162, 255, 0.25);
-  --tint-a: 0.1;
-  --tint-b: 0.03;
+  --tint-b: 0.05;
   --tint: rgba(255, 255, 255, 0);
   --shade: 0.3;
   --sans: Geist, ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
@@ -83,31 +82,17 @@ button {
 .glass {
   position: relative;
   background: linear-gradient(
-      135deg,
-      rgba(255, 255, 255, var(--tint-a)),
+      rgba(255, 255, 255, var(--tint-b)),
       rgba(255, 255, 255, var(--tint-b))
     ),
     linear-gradient(var(--tint), var(--tint));
   border: 1px solid var(--glass-edge);
   box-shadow:
-    inset 1px 1px 0 rgba(255, 255, 255, 0.32),
-    inset -1px -1px 0 rgba(255, 255, 255, 0.08),
-    inset 0 0 24px rgba(140, 170, 255, 0.07),
     0 16px 48px rgba(0, 0, 0, 0.55),
     0 2px 8px rgba(0, 0, 0, 0.4);
   backdrop-filter: blur(var(--blur, 6px)) saturate(180%);
   -webkit-backdrop-filter: blur(var(--blur, 6px)) saturate(180%);
 }
-/* Sheen across the top half. */
-.glass::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.1), transparent 48%);
-  pointer-events: none;
-}
-
 /* ------------------------------------------------------------------- stage */
 
 .hud {
@@ -163,7 +148,7 @@ button {
   align-items: flex-end;
 }
 .clock {
-  font-family: var(--display);
+  font-family: var(--font-clock, var(--display));
   font-weight: 600;
   font-size: var(--clock-size, 72px);
   line-height: 1;
@@ -172,7 +157,7 @@ button {
   font-variant-numeric: tabular-nums;
 }
 .date {
-  font: 600 max(10px, calc(var(--clock-size, 72px) * 0.16)) / 1 var(--mono);
+  font: 600 max(10px, calc(var(--clock-size, 72px) * 0.16)) / 1 var(--font-date, var(--mono));
   letter-spacing: 0.14em;
   text-transform: uppercase;
   color: rgba(232, 235, 247, 0.62);
@@ -202,6 +187,7 @@ button {
 
 /* Composer */
 .composer {
+  container-type: inline-size;
   --blur: 7px;
   width: 100%;
   display: flex;
@@ -214,9 +200,6 @@ button {
 .composer:focus-within {
   border-color: rgba(122, 162, 255, 0.3);
   box-shadow:
-    inset 1px 1px 0 rgba(255, 255, 255, 0.32),
-    inset -1px -1px 0 rgba(255, 255, 255, 0.08),
-    inset 0 0 24px rgba(140, 170, 255, 0.07),
     0 16px 48px rgba(0, 0, 0, 0.55),
     0 0 0 3px rgba(122, 162, 255, 0.12);
 }
@@ -523,7 +506,6 @@ button {
   translate: var(--x, 0) 0;
   border-radius: 999px;
   background: rgba(255, 255, 255, 0.14);
-  box-shadow: inset 1px 1px 0 rgba(255, 255, 255, 0.2);
   transition: translate 0.35s var(--ease-spring), width 0.35s var(--ease-spring);
 }
 .scenebar-thumb.instant {
@@ -1028,9 +1010,6 @@ html.gl [data-glass] {
   -webkit-backdrop-filter: none !important;
   box-shadow: 0 18px 50px rgba(0, 0, 0, 0.42), 0 2px 8px rgba(0, 0, 0, 0.28) !important;
 }
-html.gl [data-glass]::before {
-  display: none;
-}
 html.gl .link[data-glass],
 html.gl .gear[data-glass],
 html.gl .status-pill[data-glass] {
@@ -1324,4 +1303,48 @@ body.drawer-open .cz-bar {
 }
 body.drawer-open .cz-box[data-el="gear"] {
   display: none;
+}
+
+/* Narrow search boxes: buttons never spill out, the engine shows just its icon. */
+.composer-top,
+.composer textarea {
+  min-width: 0;
+}
+.composer-bottom,
+.engine-btn,
+.square-btn {
+  flex-shrink: 0;
+}
+.engine-btn {
+  white-space: nowrap;
+}
+.composer[data-size="compact"] textarea {
+  white-space: nowrap;
+  overflow: hidden;
+}
+@container (max-width: 520px) {
+  .composer[data-size="compact"] .engine-name {
+    display: none;
+  }
+}
+@container (max-width: 360px) {
+  .engine-name {
+    display: none;
+  }
+}
+
+/* Per-element fonts (Tweaks → Elements → Font). */
+.greeting,
+.greeting .name-input {
+  font-family: var(--font-greeting, var(--display));
+}
+.composer textarea {
+  font-family: var(--font-search, -apple-system, BlinkMacSystemFont, "SF Pro Text", Geist, system-ui, sans-serif);
+}
+.link-label,
+.link-icon .letter {
+  font-family: var(--font-links, var(--sans));
+}
+.status-pill {
+  font-family: var(--font-status, var(--sans));
 }

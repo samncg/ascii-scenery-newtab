@@ -2,6 +2,7 @@ import { type AnimalDirection, KOI_VARIETIES, type KoiVariety } from '../scenes/
 import type { SceneId } from '../scenes/types';
 import type { TimeOverride } from '../engine/time';
 import type { GeoLocation, WeatherKind } from '../engine/weather';
+import { FONT_TARGETS, FONTS, type FontId, type FontTarget } from './fonts';
 import { readExt, readLocal, writeExt, writeLocal } from './storage';
 
 export interface QuickLink {
@@ -12,7 +13,10 @@ export interface QuickLink {
 
 export type EngineId = 'google' | 'duckduckgo' | 'bing' | 'brave' | 'startpage' | 'kagi' | 'perplexity' | 'chatgpt' | 'claude';
 
-export const SCENE_IDS: readonly SceneId[] = ['tokyo', 'cabin', 'sf', 'silhouette', 'aurora', 'cat', 'koi', 'clearing', 'butterflies', 'mantas', 'jellyfish'];
+export const SCENE_IDS: readonly SceneId[] = [
+  'tokyo', 'sf', 'silhouette', 'aurora', 'dunes', 'ocean',
+  'koi', 'butterflies', 'mantas', 'jellyfish', 'whales', 'turtles', 'starlings', 'fireflies',
+];
 
 export interface Settings {
   scene: SceneId;
@@ -57,6 +61,8 @@ export interface Settings {
   animalSize: number;
   animalDirection: AnimalDirection;
   koiVarieties: KoiVariety[];
+  /** Font per element ('default' keeps the element's own font). */
+  fonts: Record<FontTarget, FontId>;
 }
 
 const uid = (): string => Math.random().toString(36).slice(2, 10);
@@ -107,6 +113,7 @@ export const DEFAULTS: Settings = {
   animalSize: 1,
   animalDirection: 'free',
   koiVarieties: KOI_VARIETIES.map((v) => v.id),
+  fonts: { clock: 'default', date: 'default', greeting: 'default', search: 'default', links: 'default', status: 'default', ascii: 'geist-mono' },
 };
 
 const KEY = 'asn:settings:v4';
@@ -151,6 +158,9 @@ function sanitize(raw: unknown): Settings {
   const ids = KOI_VARIETIES.map((v) => v.id) as KoiVariety[];
   const koi = Array.isArray(s.koiVarieties) ? s.koiVarieties.filter((v) => ids.includes(v)) : [];
   s.koiVarieties = koi.length ? koi : ids;
+  const fontIds = FONTS.map((f) => f.id) as FontId[];
+  const fonts = (s.fonts && typeof s.fonts === 'object' ? s.fonts : {}) as Partial<Record<FontTarget, FontId>>;
+  s.fonts = Object.fromEntries(FONT_TARGETS.map((t) => [t, oneOf(fonts[t], fontIds, DEFAULTS.fonts[t])])) as Record<FontTarget, FontId>;
   delete (s as Partial<Settings> & { fontSize?: number }).fontSize;
   delete (s as Partial<Settings> & { fps?: number }).fps;
   s.links = Array.isArray(s.links)

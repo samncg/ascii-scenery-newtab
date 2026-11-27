@@ -3,6 +3,9 @@ import type { Grid } from './grid';
 
 export const MONO_STACK = '"Geist Mono", ui-monospace, "Cascadia Mono", Menlo, Consolas, monospace';
 
+/** Font used for the ASCII art (set from settings before each resize). */
+export const fontState = { stack: MONO_STACK };
+
 /** Near-black "ink" the default style is built on. */
 export const INK: RGB = [6, 7, 12];
 

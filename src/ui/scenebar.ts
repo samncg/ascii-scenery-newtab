@@ -5,11 +5,19 @@ import type { SettingsStore } from './settings';
 /** Dot colors hinting at each scene. */
 const DOTS: Record<string, [string, string]> = {
   tokyo: ['#ff7ac0', '#7a4bff'],
-  cabin: ['#ffc070', '#c0642a'],
   sf: ['#ff8a5c', '#c4382c'],
-  cat: ['#ffd08a', '#e0965a'],
   koi: ['#ffb070', '#e4512f'],
-  clearing: ['#ffd24f', '#e07032'],
+  silhouette: ['#ffc070', '#2c4a34'],
+  aurora: ['#6dff9a', '#a064ff'],
+  dunes: ['#ffd090', '#c07040'],
+  ocean: ['#7ac0ff', '#2a5a9a'],
+  butterflies: ['#7ab0ff', '#3050d0'],
+  mantas: ['#7af0ff', '#2a6a9a'],
+  jellyfish: ['#ff8ad8', '#a050ff'],
+  whales: ['#a0c0e8', '#3a4c70'],
+  turtles: ['#c0d080', '#607040'],
+  starlings: ['#c8d0e8', '#40485c'],
+  fireflies: ['#e0ff80', '#70a030'],
 };
 
 /** Pill-shaped segmented scene switcher with a sliding thumb (top centre). */

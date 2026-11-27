@@ -66,13 +66,26 @@ export class Hud {
       } else return;
       e.preventDefault();
     });
+    // Type anywhere: printable keys go straight into the search box, so there's
+    // no need to click it first.
     document.addEventListener('keydown', (e) => {
       const t = e.target as HTMLElement;
-      const typing = t instanceof HTMLInputElement || t instanceof HTMLTextAreaElement || t?.isContentEditable;
-      if (e.key === '/' && !typing) {
+      const typing = t instanceof HTMLInputElement || t instanceof HTMLTextAreaElement || t instanceof HTMLSelectElement || t?.isContentEditable;
+      if (typing || e.ctrlKey || e.metaKey || e.altKey || e.isComposing) return;
+      const s = this.store.get();
+      if (!s.showSearch || this.form.hidden || document.body.classList.contains('customizing')) return;
+      if (document.querySelector('dialog[open]')) return;
+      if (e.key === '/') {
         e.preventDefault();
         this.input.focus();
+        return;
       }
+      if (e.key.length !== 1) return;
+      e.preventDefault();
+      this.input.focus({ preventScroll: true });
+      const end = this.input.value.length;
+      this.input.setRangeText(e.key, end, end, 'end');
+      this.input.dispatchEvent(new Event('input', { bubbles: true }));
     });
     this.setupMic();
     this.greeting.title = 'Click to edit';
@@ -89,6 +102,7 @@ export class Hud {
     });
     this.renderEngine();
     this.apply();
+    new ResizeObserver(() => this.updatePlaceholder()).observe(this.form);
     this.autosize();
     // Chrome keeps focus in the address bar on new tabs; elsewhere, focus search.
     setTimeout(() => this.input.focus({ preventScroll: true }), 50);
@@ -173,12 +187,21 @@ export class Hud {
     this.autosize();
   }
 
+  /** Shorter placeholder when the box is narrow, so it never wraps. */
+  private updatePlaceholder(): void {
+    const eng = engineById(this.store.get().engine);
+    const w = this.form.getBoundingClientRect().width;
+    const compact = this.store.get().searchSize === 'compact';
+    const narrow = w > 0 && w < (compact ? 560 : 420);
+    this.input.placeholder = narrow ? (eng.ai ? `Ask ${eng.name}…` : `Search ${eng.name}…`) : eng.ai ? `Ask ${eng.name} anything…` : `Search ${eng.name} or ask anything…`;
+  }
+
   private renderEngine(): void {
     const s = this.store.get();
     const eng = engineById(s.engine);
-    this.engineBtn.replaceChildren(h('span', { class: 'glyph', text: eng.glyph }), h('span', { text: eng.name }), icon(ICONS.chevron, 14));
+    this.engineBtn.replaceChildren(h('span', { class: 'glyph', text: eng.glyph }), h('span', { class: 'engine-name', text: eng.name }), icon(ICONS.chevron, 14));
     this.engineBtn.setAttribute('aria-label', `Search engine: ${eng.name}`);
-    this.input.placeholder = eng.ai ? `Ask ${eng.name} anything…` : `Search ${eng.name} or ask anything…`;
+    this.updatePlaceholder();
     this.menu.replaceChildren(
       ...ENGINES.map((e) =>
         h(

@@ -6,16 +6,19 @@ import type { WeatherMix } from '../engine/weather';
 
 export type SceneId =
   | 'tokyo'
-  | 'cabin'
   | 'sf'
   | 'silhouette'
   | 'aurora'
-  | 'cat'
+  | 'dunes'
+  | 'ocean'
   | 'koi'
-  | 'clearing'
   | 'butterflies'
   | 'mantas'
-  | 'jellyfish';
+  | 'jellyfish'
+  | 'whales'
+  | 'turtles'
+  | 'starlings'
+  | 'fireflies';
 
 export interface Body {
   x: number;

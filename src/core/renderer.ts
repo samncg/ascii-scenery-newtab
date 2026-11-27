@@ -1,5 +1,5 @@
 import { css } from './color';
-import { CELL_RATIO, cellWidth, INK, inkStops, MONO_STACK, type FrameStyle, type IRenderer, type RenderStyle } from './render-common';
+import { CELL_RATIO, cellWidth, INK, inkStops, fontState, type FrameStyle, type IRenderer, type RenderStyle } from './render-common';
 import { HAS, type Grid } from './grid';
 import { hash2 } from './math';
 
@@ -92,7 +92,7 @@ export class Renderer2D implements IRenderer {
     this.colorCss.clear();
     this.cw = cellWidth(Math.min(density, 150));
     this.chh = Math.round(this.cw * CELL_RATIO);
-    this.font = `600 ${Math.round(this.chh * 0.74)}px ${MONO_STACK}`;
+    this.font = `600 ${Math.round(this.chh * 0.74)}px ${fontState.stack}`;
     this.canvas.width = Math.round(w * this.dpr);
     this.canvas.height = Math.round(h * this.dpr);
     this.canvas.style.width = `${w}px`;
