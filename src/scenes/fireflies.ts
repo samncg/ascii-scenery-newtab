@@ -7,7 +7,7 @@ import type { Env } from './types';
 
 interface Fly { x: number; y: number; vx: number; vy: number; ph: number; rate: number; z: number }
 
-const GLOW: RGB = [200, 255, 110];
+const GLOW: RGB = [210, 255, 100];
 
 /** A meadow at night: tall black grass and fireflies blinking in slow waves. */
 export class FirefliesScene extends AbyssScene {
@@ -58,10 +58,18 @@ export class FirefliesScene extends AbyssScene {
       if (f.y > rows) f.y -= rows * 0.85;
       const blink = Math.pow(Math.max(0, Math.sin(t * f.rate * 3 + f.ph)), 0.6) * (0.45 + 0.55 * wave(f.x));
       if (blink < 0.12) continue;
-      const k = blink * (0.65 + 0.35 * f.z);
-      const big = f.z > 0.75 && size >= 1;
-      g.put(f.x, f.y, k > 0.55 ? (big ? '*' : '+') : '.', packRGB(255 * Math.min(1, k + 0.3), 255 * Math.min(1, k + 0.2), 150 * k), packRGB(GLOW[0] * k * 0.5, GLOW[1] * k * 0.5, GLOW[2] * k * 0.3));
-      g.glowAt(f.x, f.y, 3.5 * size, 2.6 * size, GLOW, 1.1 * k);
+      const k = blink * (0.7 + 0.3 * f.z);
+      const r = (0.9 + 0.6 * f.z) * size;
+      const core = packRGB(255, 255, 200 + 55 * k);
+      const warm = packRGB(220 * k + 35, 255 * k, 90 * k);
+      // Bright core cell on a lit tile, a small cross of light when at full
+      // brightness, a wide glow and a faint halo behind everything.
+      g.put(f.x, f.y, k > 0.55 ? '*' : '+', core, packRGB(150 * k, 210 * k, 60 * k));
+      if (k > 0.55) {
+        for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) g.set(f.x + dx, f.y + dy, dx ? '-' : ':', warm);
+      }
+      g.glowAt(f.x, f.y, 3 * r, 2.2 * r, GLOW, 1.25 * k);
+      g.backAt(f.x, f.y, 5 * r, 3.5 * r, [120, 200, 60], 0.1 * k);
     }
     // Tall grass silhouettes swaying in the wind, completely black.
     const gust = 0.6 + Math.abs(w.wind) * 2;

@@ -61,6 +61,9 @@ export class DunesScene extends BaseScene {
     // The low sun (or moon) decides which faces are lit.
     const light = env.sun.visible && env.sun.alt > -0.05 ? env.sun : env.moon;
     const lightX = light.x;
+    // When the light is under the horizon, treat it as just above it.
+    const lightY = Math.min(light.y, this.horizonRow - 2);
+    const a = env.aspect;
     const golden = clamp((0.85 - pal.daylight) * 2) * (1 - night);
     const lit = mix(mix(SAND, [255, 168, 96], golden * 0.6), NIGHT_SAND, night);
     const dark = mix(mix(SHADE, [120, 60, 70], golden * 0.5), [22, 24, 40], night);
@@ -70,8 +73,16 @@ export class DunesScene extends BaseScene {
       for (let x = 0; x < cols; x++) tops[x] = this.crest(L, x);
       for (let x = 0; x < cols; x++) {
         const slope = (tops[Math.min(cols - 1, x + 1)] - tops[Math.max(0, x - 1)]) / 2;
-        // Faces turned toward the light are bright, the others in shade.
-        const facing = clamp(0.5 + (lightX > x ? -slope : slope) * 1.6);
+        // Lambert lighting: surface normal (screen y points down) against the
+        // direction to the sun or moon, so a high sun lights almost everything
+        // and a low one leaves the far-side slip faces in shadow.
+        const sv = slope * a;
+        const nl = Math.hypot(sv, 1);
+        const lx = lightX - x;
+        const ly = (lightY - tops[x]) * a;
+        const ll = Math.hypot(lx, ly) || 1;
+        const diffuse = (sv * lx - ly) / (nl * ll);
+        const facing = clamp(0.12 + 0.88 * diffuse);
         const c0 = mix(mix(dark, lit, facing), pal.skyBottom, haze);
         const y0 = Math.max(0, Math.round(tops[x]));
         for (let y = y0; y < rows; y++) {

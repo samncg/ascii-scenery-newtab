@@ -119,6 +119,12 @@ export class TokyoScene extends BaseScene {
     this.train.wait = 3;
   }
 
+  stops(env: Env): Array<[number, RGB]> {
+    // Real daylight sky; the ink only takes over toward evening.
+    this.skyInk = 1 - 0.8 * env.pal.daylight;
+    return super.stops(env);
+  }
+
   fogBias(y: number): number {
     if (y >= this.railY) return 0.12;
     const d = (y - this.horizonRow) / (this.rows * 0.3);
@@ -394,9 +400,12 @@ export class TokyoScene extends BaseScene {
     const p = env.pal;
     const L = p.lights;
     const R = this.railY;
-    const rim = pack(mix(p.near, p.light, 0.25 * L));
-    const nbg = pack(p.nearBg);
-    const floorBg = mixPack(p.nearBg, [0, 0, 0], 0.3);
+    // Sunlit balcony by day, dark with a warm rim at night.
+    const day = p.daylight;
+    const railC = mix(p.near, [150, 158, 170], 0.75 * day);
+    const rim = pack(mix(railC, p.light, 0.25 * L));
+    const nbg = pack(mix(p.nearBg, [96, 102, 112], 0.7 * day));
+    const floorBg = pack(mix(mix(p.nearBg, [0, 0, 0], 0.3), [118, 106, 96], 0.7 * day));
     const tex = mixPack(p.nearBg, p.near, 0.35);
     for (let x = 0; x < this.cols; x++) {
       g.put(x, R, '=', rim, nbg);

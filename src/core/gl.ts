@@ -264,7 +264,8 @@ export class GLRenderer implements IRenderer {
   private fbo: Record<string, WebGLFramebuffer> = {};
   private bufA = new Uint8Array(0);
   private bufB = new Uint8Array(0);
-  private bufSoft = new Uint8Array(0);
+  /** Clamped so bright glow saturates to white instead of wrapping around. */
+  private bufSoft = new Uint8ClampedArray(0);
 
   static create(canvas: HTMLCanvasElement): GLRenderer | null {
     try {
@@ -360,7 +361,7 @@ export class GLRenderer implements IRenderer {
     const n = this.cols * this.rows;
     this.bufA = new Uint8Array(n * 4);
     this.bufB = new Uint8Array(n * 4);
-    this.bufSoft = new Uint8Array(n * 4);
+    this.bufSoft = new Uint8ClampedArray(n * 4);
     this.setupTex(this.tex.A, this.cols, this.rows, false);
     this.setupTex(this.tex.B, this.cols, this.rows, false);
     for (const l of ['back', 'haze', 'glow']) {
@@ -380,7 +381,7 @@ export class GLRenderer implements IRenderer {
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
   }
 
-  private upload(t: WebGLTexture, data: Uint8Array): void {
+  private upload(t: WebGLTexture, data: Uint8Array | Uint8ClampedArray): void {
     const gl = this.gl;
     gl.bindTexture(gl.TEXTURE_2D, t);
     gl.texSubImage2D(gl.TEXTURE_2D, 0, 0, 0, this.cols, this.rows, gl.RGBA, gl.UNSIGNED_BYTE, data);
